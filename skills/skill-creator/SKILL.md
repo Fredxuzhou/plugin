@@ -1,5 +1,6 @@
-<!-- SOURCE: copied from skill-creator@claude-plugins-official -->
-<!-- To update: replace everything below the provenance header with the latest SKILL.md from the official plugin -->
+<!-- SOURCE: skill-creator@claude-plugins-official — https://github.com/anthropics/claude-plugins-official/tree/main/skill-creator -->
+<!-- COPIED: 2026-04-14 -->
+<!-- To update: fetch the latest files from the SOURCE URL above and replace the contents of skills/skill-creator/ (keep these provenance lines at the top of SKILL.md) -->
 
 ---
 name: skill-creator
