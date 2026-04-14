@@ -31,9 +31,9 @@ copilot plugin install team-plugin@your-org
 1. **Update `.claude-plugin/plugin.json`** — replace `Your Team Name` and `your-org/team-plugin` with your actual team and repo details.
 2. **Fill in `CLAUDE.md`** — replace the `TODO` sections with your team name, doc links, and coding conventions.
 3. **Customize hooks** (optional) — edit `hooks/scripts/` to match your team's policies:
-   - `session-start.sh` — update the banner text
-   - `pre-tool-use-bash.sh` — add or remove dangerous patterns
-   - `post-tool-use-write.sh` — uncomment the auto-format example for your stack
+   - `session-start` (bash) / `session-start.ps1` (PowerShell) — update the banner text
+   - `pre-tool-use-bash` (bash) / `pre-tool-use-bash.ps1` (PowerShell) — add or remove dangerous patterns
+   - `post-tool-use-write` (bash) / `post-tool-use-write.ps1` (PowerShell) — uncomment the auto-format example for your stack
 4. **Add internal MCP** (when ready) — drop your server config into `.mcp.json`. See `CLAUDE.md` for the expected format.
 
 ## Updating Official Content
