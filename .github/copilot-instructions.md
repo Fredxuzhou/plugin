@@ -29,3 +29,13 @@ This file gives GitHub Copilot (VS Code, JetBrains, and other IDEs) context abou
 ## Internal MCP
 <!-- TODO: Update when your internal MCP is configured -->
 The team uses an internal MCP server configured in `.mcp.json` (Claude Code CLI / Copilot CLI only).
+
+## Installed Components
+| Component | Type | Purpose |
+|-----------|------|---------|
+| `skill-creator` | Skill | Create and improve agent skills (Claude Code CLI / Copilot CLI only) |
+| `code-reviewer` | Agent | Review completed implementation steps (Claude Code CLI / Copilot CLI only) |
+| `session-start` hook | Hook | Prints team banner on session start (Claude Code CLI / Copilot CLI only) |
+| `pre-tool-use-bash` hook | Hook | Guards dangerous Bash commands (Claude Code CLI / Copilot CLI only) |
+| `post-tool-use-write` hook | Hook | Placeholder for auto-format on file write (Claude Code CLI / Copilot CLI only) |
+| `Stop` hook | Hook | Prompt-based quality gate before completion (Claude Code CLI / Copilot CLI only) |
