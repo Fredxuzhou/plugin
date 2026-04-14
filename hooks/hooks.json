@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session-start.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/run-hook.cmd\" session-start",
             "timeout": 10
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/pre-tool-use-bash.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/run-hook.cmd\" pre-tool-use-bash",
             "timeout": 10
           }
         ]
@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/post-tool-use-write.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/run-hook.cmd\" post-tool-use-write",
             "timeout": 30
           }
         ]
