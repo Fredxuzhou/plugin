@@ -47,3 +47,35 @@ Both `skills/skill-creator/SKILL.md` and `agents/code-reviewer.md` carry a `<!--
 ## License
 
 MIT
+
+---
+
+## Platform Support
+
+| Platform | Install method | Hook support |
+|----------|---------------|--------------|
+| Claude Code CLI — Mac/Linux | `/plugin install https://github.com/your-org/team-plugin` | Full |
+| Claude Code CLI — Windows | `/plugin install https://github.com/your-org/team-plugin` | Full (requires Git Bash or PowerShell 7+) |
+| GitHub Copilot CLI | `copilot plugin marketplace add https://github.com/your-org/team-plugin` then `copilot plugin install team-plugin@your-org` | Full |
+| VS Code Copilot | Copy `.github/copilot-instructions.md` to your repo | Conventions only |
+| JetBrains Copilot | Copy `.github/copilot-instructions.md` to your repo | Conventions only |
+| Any IDE Copilot | Copy `.github/copilot-instructions.md` to your repo | Conventions only |
+
+## Windows Requirements
+
+Hooks require one of:
+
+- **Git for Windows** (recommended) — includes bash. Download: https://git-scm.com
+- **PowerShell 7+** — cross-platform PowerShell. Install: `winget install Microsoft.PowerShell`
+
+If neither is installed, hooks will exit with an error message pointing to this requirement. Skills and agents still work without bash or PowerShell.
+
+## IDE Copilot Setup
+
+VS Code, JetBrains, and other IDE Copilot integrations do not support plugin installation. To give IDE Copilot your team's context:
+
+1. Copy `.github/copilot-instructions.md` from this repo into your project repo at the same path
+2. Fill in the `TODO` sections (team name, doc links, conventions)
+3. Commit — GitHub Copilot picks it up automatically
+
+Note: Hooks, the `code-reviewer` agent, and the `skill-creator` skill are only available in Claude Code CLI and GitHub Copilot CLI, not in IDE Copilot.
