@@ -1,0 +1,12 @@
+{
+  "name": "team-plugin",
+  "version": "0.1.0",
+  "description": "Team AI plugin — skills, agents, hooks, and context for Claude Code and GitHub Copilot CLI",
+  "author": {
+    "name": "Your Team Name",
+    "url": "https://github.com/your-org/team-plugin"
+  },
+  "repository": "https://github.com/your-org/team-plugin",
+  "license": "MIT",
+  "keywords": ["team", "productivity", "skills", "workflow"]
+}
