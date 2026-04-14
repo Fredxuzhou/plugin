@@ -9,7 +9,7 @@ $inputJson = $input -join ""
 $command = ""
 try {
     $data = $inputJson | ConvertFrom-Json
-    $command = $data.command
+    $command = [string]$data.command
 } catch {
     $command = ""
 }
@@ -23,8 +23,8 @@ $dangerousPatterns = @(
 )
 
 foreach ($pattern in $dangerousPatterns) {
-    if ($command -like "*$pattern*") {
-        Write-Output "{`"decision`":`"block`",`"reason`":`"Potentially destructive command detected: $pattern. Please confirm this is intentional.`"}"
+    if ($command.Contains($pattern)) {
+        [PSCustomObject]@{ decision = "block"; reason = "Potentially destructive command detected: $pattern. Please confirm this is intentional." } | ConvertTo-Json -Compress
         exit 0
     }
 }
