@@ -1,0 +1,66 @@
+#!/bin/bash
+# QUALITY GATE HOOK
+# Runs after every Edit and Write tool call. Performs a lightweight
+# syntax/lint check on the modified file using whatever tooling is available.
+# Never blocks — warns via stderr only.
+#
+# Supported checks (skipped silently if tool not installed):
+#   JS/TS   → eslint (if available)
+#   Python  → python3 -m py_compile (syntax check)
+#   Go      → gofmt -l (format check)
+#   JSON    → python3 -m json.tool (syntax check)
+
+INPUT=$(cat)
+FILE_PATH=$(echo "$INPUT" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    # PostToolUse input uses tool_input for the file path
+    fp = data.get('tool_input', {}).get('file_path', '')
+    if not fp:
+        fp = data.get('file_path', '')
+    print(fp)
+except Exception:
+    print('')
+" 2>/dev/null)
+
+if [ -z "$FILE_PATH" ] || [ ! -f "$FILE_PATH" ]; then
+  exit 0
+fi
+
+EXT="${FILE_PATH##*.}"
+
+case "$EXT" in
+  js|jsx|ts|tsx)
+    if command -v eslint &>/dev/null; then
+      RESULT=$(eslint --no-eslintrc --rule '{"no-undef":1}' "$FILE_PATH" 2>&1)
+      if [ $? -ne 0 ]; then
+        echo "[team-plugin] quality-gate: eslint found issues in ${FILE_PATH}:" >&2
+        echo "$RESULT" | head -20 >&2
+      fi
+    fi
+    ;;
+  py)
+    RESULT=$(python3 -m py_compile "$FILE_PATH" 2>&1)
+    if [ $? -ne 0 ]; then
+      echo "[team-plugin] quality-gate: Python syntax error in ${FILE_PATH}:" >&2
+      echo "$RESULT" >&2
+    fi
+    ;;
+  go)
+    if command -v gofmt &>/dev/null; then
+      RESULT=$(gofmt -l "$FILE_PATH" 2>&1)
+      if [ -n "$RESULT" ]; then
+        echo "[team-plugin] quality-gate: ${FILE_PATH} needs gofmt formatting" >&2
+      fi
+    fi
+    ;;
+  json)
+    RESULT=$(python3 -m json.tool "$FILE_PATH" > /dev/null 2>&1)
+    if [ $? -ne 0 ]; then
+      echo "[team-plugin] quality-gate: JSON syntax error in ${FILE_PATH}" >&2
+    fi
+    ;;
+esac
+
+exit 0

@@ -1,0 +1,52 @@
+#!/bin/bash
+# PR LOGGER HOOK
+# Runs after every Bash tool call. Detects when a `gh pr create` command
+# was run and prints the PR URL + a ready-to-use review command to stderr.
+# Never blocks — informational only.
+
+INPUT=$(cat)
+
+COMMAND=$(echo "$INPUT" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    print(data.get('tool_input', {}).get('command', ''))
+except Exception:
+    print('')
+" 2>/dev/null)
+
+# Only act on gh pr create commands
+if ! echo "$COMMAND" | grep -qE '\bgh\s+pr\s+create\b'; then
+  exit 0
+fi
+
+# Extract PR URL from tool response output
+PR_URL=$(echo "$INPUT" | python3 -c "
+import sys, json, re
+try:
+    data = json.load(sys.stdin)
+    output = data.get('tool_response', {}).get('output', '')
+    if isinstance(output, list):
+        output = ' '.join(str(x) for x in output)
+    m = re.search(r'https://github\.com/[^/\s]+/[^/\s]+/pull/(\d+)', str(output))
+    if m:
+        print(m.group(0))
+        print(m.group(1))
+except Exception:
+    pass
+" 2>/dev/null)
+
+if [ -n "$PR_URL" ]; then
+  URL=$(echo "$PR_URL" | head -1)
+  PR_NUM=$(echo "$PR_URL" | tail -1)
+  REPO=$(echo "$URL" | python3 -c "
+import sys, re
+url = sys.stdin.read().strip()
+m = re.search(r'github\.com/([^/]+/[^/]+)/pull/', url)
+if m: print(m.group(1))
+" 2>/dev/null)
+  echo "[team-plugin] PR created: ${URL}" >&2
+  echo "  To review: gh pr review ${PR_NUM} --repo ${REPO}" >&2
+fi
+
+exit 0

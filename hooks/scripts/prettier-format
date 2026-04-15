@@ -1,0 +1,37 @@
+#!/bin/bash
+# PRETTIER FORMAT HOOK
+# Runs after every Write tool call. If Prettier is installed in the project
+# or globally, auto-formats the written file in place.
+# Silently skips if Prettier is not available.
+#
+# Supported extensions: js jsx ts tsx css scss html json md yaml yml
+
+INPUT=$(cat)
+FILE_PATH=$(echo "$INPUT" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    print(data.get('tool_input', {}).get('file_path', ''))
+except Exception:
+    print('')
+" 2>/dev/null)
+
+if [ -z "$FILE_PATH" ] || [ ! -f "$FILE_PATH" ]; then
+  exit 0
+fi
+
+# Check if file extension is supported
+EXT="${FILE_PATH##*.}"
+case "$EXT" in
+  js|jsx|ts|tsx|css|scss|html|json|md|yaml|yml) ;;
+  *) exit 0 ;;
+esac
+
+# Try local prettier first, then global
+if [ -x "node_modules/.bin/prettier" ]; then
+  node_modules/.bin/prettier --write "$FILE_PATH" 2>/dev/null || true
+elif command -v prettier &>/dev/null; then
+  prettier --write "$FILE_PATH" 2>/dev/null || true
+fi
+
+exit 0

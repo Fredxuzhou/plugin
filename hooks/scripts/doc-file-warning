@@ -1,0 +1,44 @@
+#!/bin/bash
+# DOC FILE WARNING HOOK
+# Runs before every Write tool call. Warns when Claude is about to create
+# an ad-hoc documentation file (NOTES.md, TODO.txt, SCRATCH.md, etc.)
+# outside of structured directories.
+# Never blocks — only warns via stderr.
+#
+# TODO: Add more patterns to AD_HOC_NAMES or paths to ALLOWED_DIRS as needed.
+
+INPUT=$(cat)
+FILE_PATH=$(echo "$INPUT" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    print(data.get('tool_input', {}).get('file_path', ''))
+except Exception:
+    print('')
+" 2>/dev/null)
+
+if [ -z "$FILE_PATH" ]; then
+  exit 0
+fi
+
+# Extract basename (lowercase for matching)
+BASENAME=$(basename "$FILE_PATH" | tr '[:upper:]' '[:lower:]')
+
+# Check for ad-hoc doc file patterns
+if ! echo "$BASENAME" | grep -qE '^(notes|todo|todos|scratch|temp|draft|wip|untitled|misc)\.(md|txt)$'; then
+  exit 0
+fi
+
+# Allow files inside structured directories
+ALLOWED_DIRS="docs/ .claude/ .github/ commands/ skills/ memory/ templates/"
+for dir in $ALLOWED_DIRS; do
+  if echo "$FILE_PATH" | grep -q "$dir"; then
+    exit 0
+  fi
+done
+
+echo "[team-plugin] Warning: '${FILE_PATH}' looks like an ad-hoc doc file." >&2
+echo "  Consider using docs/, .claude/, or another structured directory instead." >&2
+echo "  Writing anyway — remove this hook to silence." >&2
+
+exit 0

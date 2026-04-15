@@ -21,10 +21,18 @@ copilot plugin install team-plugin@your-org
 |-----------|------|--------|
 | `skill-creator` | Skill | Copied from `skill-creator@claude-plugins-official` |
 | `code-reviewer` | Agent | Copied from `superpowers@claude-plugins-official` v5.0.7 |
-| `SessionStart` hook | Hook | Example — prints team banner |
-| `PreToolUse` hook | Hook | Example — guards dangerous Bash commands |
-| `PostToolUse` hook | Hook | Example — placeholder for auto-format |
-| `Stop` hook | Hook | Example — prompt-based quality gate |
+| `session-start` hook | Hook | Prints team banner on session start |
+| `pre-tool-use-bash` hook | Hook | Guards dangerous Bash commands |
+| `pre-commit-quality` hook | Hook | Blocks commits with debug code or bad message format |
+| `git-push-reminder` hook | Hook | Reminds to review before git push |
+| `doc-file-warning` hook | Hook | Warns on ad-hoc doc files outside structured dirs |
+| `strategic-compact` hook | Hook | Suggests /compact at edit count thresholds |
+| `post-tool-use-write` hook | Hook | Placeholder for custom post-write actions |
+| `prettier-format` hook | Hook | Auto-formats written files via Prettier (if installed) |
+| `quality-gate` hook | Hook | Syntax/lint check after every file edit |
+| `pr-logger` hook | Hook | Logs PR URL and review command after gh pr create |
+| `pre-compact` hook | Hook | Logs timestamp before context compaction |
+| `Stop` hook | Hook | Prompt-based quality gate before session end |
 
 ## Setup After Install
 
@@ -43,6 +51,81 @@ Both `skills/skill-creator/SKILL.md` and `agents/code-reviewer.md` carry a `<!--
 1. Find the latest files at the URL in the SOURCE comment
 2. Replace the file contents (keep the provenance header lines at the top)
 3. Commit with `chore: update <component> from upstream`
+
+## Hooks Reference
+
+All hooks run through the cross-platform `run-hook.cmd` wrapper (bash on Mac/Linux, Git Bash or PowerShell 7+ on Windows). Each hook has an extensionless bash script and a `.ps1` PowerShell equivalent in `hooks/scripts/`.
+
+### Hook Overview
+
+| Script | Event | Matcher | Blocking? | Purpose |
+|--------|-------|---------|-----------|---------|
+| `session-start` | SessionStart | — | No | Prints team banner |
+| `pre-tool-use-bash` | PreToolUse | Bash | Yes | Blocks dangerous shell commands |
+| `pre-commit-quality` | PreToolUse | Bash | Yes | Quality checks before git commit |
+| `git-push-reminder` | PreToolUse | Bash | No | Reminds to review before push |
+| `doc-file-warning` | PreToolUse | Write | No | Warns about ad-hoc doc files |
+| `strategic-compact` | PreToolUse | Edit\|Write | No | Suggests /compact at thresholds |
+| `post-tool-use-write` | PostToolUse | Write | No | Placeholder for auto-format |
+| `prettier-format` | PostToolUse | Write | No | Auto-formats files via Prettier |
+| `quality-gate` | PostToolUse | Edit\|Write | No | Syntax/lint check after edits |
+| `pr-logger` | PostToolUse | Bash | No | Logs PR URL after gh pr create |
+| `pre-compact` | PreCompact | — | No | Logs compaction timestamp |
+| `Stop` | Stop | — | No | Prompt-based quality gate |
+
+### Hook Details
+
+#### `pre-commit-quality`
+Intercepts `git commit` commands and checks:
+- Staged `.js/.jsx/.ts/.tsx` files for `console.log`, `console.debug`, or `debugger` statements
+- Commit message format against [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): description`
+
+Blocks the commit and lists all issues if checks fail. Customize patterns in the script.
+
+**Dependencies:** `git`, `python3`
+
+#### `git-push-reminder`
+Detects `git push` commands and prints a non-blocking checklist to stderr reminding you to review `git diff origin/HEAD` and confirm CI status before the push proceeds.
+
+**Dependencies:** none
+
+#### `doc-file-warning`
+Warns when Claude writes a file matching ad-hoc patterns (`NOTES.md`, `TODO.txt`, `SCRATCH.md`, `TEMP.md`, etc.) outside of structured directories (`docs/`, `.claude/`, `.github/`, `skills/`, `memory/`). Never blocks.
+
+**Dependencies:** `python3`
+
+#### `strategic-compact`
+Tracks edit/write operations per session (keyed by parent process ID). At the configured threshold (default: 50, override with `COMPACT_THRESHOLD` env var) and every 25 calls after, suggests running `/compact` to keep context fresh.
+
+**Dependencies:** none
+
+#### `quality-gate`
+After each file edit or write, runs a lightweight check using available tooling:
+- **JS/TS** → ESLint (if installed)
+- **Python** → `python3 -m py_compile` (syntax check)
+- **Go** → `gofmt -l` (format check)
+- **JSON** → `python3 -m json.tool` (syntax check)
+
+Never blocks. Prints warnings to stderr.
+
+**Dependencies:** `python3`; optional: `eslint`, `gofmt`
+
+#### `prettier-format`
+After each Write, auto-formats the file in place using Prettier if available. Tries the local `node_modules/.bin/prettier` first, then the global `prettier`. Silently skips if Prettier is not installed. Supports: `js jsx ts tsx css scss html json md yaml yml`.
+
+**Dependencies:** optional: `prettier`
+
+#### `pr-logger`
+After each Bash tool call, checks if the command was `gh pr create`. If so, extracts the PR URL from the output and prints the URL and a ready-to-use `gh pr review` command to stderr.
+
+**Dependencies:** `gh` (GitHub CLI), `python3`
+
+#### `pre-compact`
+Runs before Claude Code compacts the conversation context. Appends a timestamped line to `~/.claude/compaction-log.txt` so you can track compaction frequency.
+
+**Dependencies:** none
+
+---
 
 ## License
 

@@ -1,0 +1,16 @@
+#!/bin/bash
+# PRE-COMPACT HOOK
+# Runs before Claude Code compacts the conversation context.
+# Appends a timestamped entry to ~/.claude/compaction-log.txt so you
+# can track when and how often compaction occurs.
+# Never blocks compaction — always exits 0.
+
+LOG_FILE="${HOME}/.claude/compaction-log.txt"
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date +"%Y-%m-%dT%H:%M:%S")
+
+# Ensure the log directory exists
+mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null
+
+echo "[${TIMESTAMP}] Context compaction triggered" >> "$LOG_FILE" 2>/dev/null || true
+
+exit 0

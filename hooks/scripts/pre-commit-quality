@@ -1,0 +1,64 @@
+#!/bin/bash
+# PRE-COMMIT QUALITY CHECK HOOK
+# Runs before every Bash tool call. Intercepts `git commit` commands to check:
+#   - Staged JS/TS files for console.log and debugger statements
+#   - Commit message format (Conventional Commits)
+# Blocks the commit if critical issues are found.
+#
+# TODO: Extend DANGEROUS_PATTERNS or add more checks for your stack.
+
+INPUT=$(cat)
+COMMAND=$(echo "$INPUT" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    print(data.get('command', ''))
+except Exception:
+    print('')
+" 2>/dev/null)
+
+# Only act on git commit commands
+if ! echo "$COMMAND" | grep -qE '\bgit\s+commit\b'; then
+  exit 0
+fi
+
+ISSUES=""
+
+# --- Check staged JS/TS files for debug statements ---
+STAGED=$(git diff --cached --name-only 2>/dev/null)
+if [ -n "$STAGED" ]; then
+  while IFS= read -r file; do
+    if echo "$file" | grep -qE '\.(js|jsx|ts|tsx)$'; then
+      if git show ":$file" 2>/dev/null | grep -qE 'console\.(log|debug|warn|error)\s*\(|debugger\s*;'; then
+        ISSUES="${ISSUES}  - ${file}: contains console.log/debugger statement\n"
+      fi
+    fi
+  done <<< "$STAGED"
+fi
+
+# --- Check commit message against Conventional Commits ---
+COMMIT_MSG=$(echo "$COMMAND" | python3 -c "
+import sys, re
+cmd = sys.stdin.read()
+# Extract -m 'msg' or -m \"msg\"
+m = re.search(r'-m\s+[\"\'](.*?)[\"\']', cmd)
+if m:
+    print(m.group(1))
+" 2>/dev/null)
+
+if [ -n "$COMMIT_MSG" ]; then
+  if ! echo "$COMMIT_MSG" | grep -qE '^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .{1,72}$'; then
+    ISSUES="${ISSUES}  - Commit message does not follow Conventional Commits format\n    Expected: type(scope): description (max 72 chars)\n    Got: ${COMMIT_MSG}\n"
+  fi
+fi
+
+if [ -n "$ISSUES" ]; then
+  REASON=$(printf "Pre-commit quality check failed:\n%b" "$ISSUES")
+  python3 -c "
+import json, sys
+print(json.dumps({'decision': 'block', 'reason': sys.argv[1]}))
+" "$REASON"
+  exit 0
+fi
+
+exit 0

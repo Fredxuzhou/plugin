@@ -1,0 +1,29 @@
+#!/bin/bash
+# GIT PUSH REMINDER HOOK
+# Runs before every Bash tool call. When a `git push` is detected,
+# prints a non-blocking reminder to review changes before they go out.
+# Never blocks — just informs.
+
+INPUT=$(cat)
+COMMAND=$(echo "$INPUT" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    print(data.get('command', ''))
+except Exception:
+    print('')
+" 2>/dev/null)
+
+# Only act on git push commands
+if ! echo "$COMMAND" | grep -qE '\bgit\s+push\b'; then
+  exit 0
+fi
+
+cat >&2 << 'EOF'
+[team-plugin] Git push detected — quick checklist before it goes out:
+  • git diff origin/HEAD   — review what you're pushing
+  • git log --oneline -5   — confirm commit history looks right
+  • CI passing?            — check your pipeline before pushing
+EOF
+
+exit 0

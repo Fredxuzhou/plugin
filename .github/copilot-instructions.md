@@ -35,7 +35,15 @@ The team uses an internal MCP server configured in `.mcp.json` (Claude Code CLI 
 |-----------|------|---------|
 | `skill-creator` | Skill | Create and improve agent skills (Claude Code CLI / Copilot CLI only) |
 | `code-reviewer` | Agent | Review completed implementation steps (Claude Code CLI / Copilot CLI only) |
-| `session-start` hook | Hook | Prints team banner on session start (Claude Code CLI / Copilot CLI only) |
-| `pre-tool-use-bash` hook | Hook | Guards dangerous Bash commands (Claude Code CLI / Copilot CLI only) |
-| `post-tool-use-write` hook | Hook | Placeholder for auto-format on file write (Claude Code CLI / Copilot CLI only) |
-| `Stop` hook | Hook | Prompt-based quality gate before completion (Claude Code CLI / Copilot CLI only) |
+| `session-start` hook | Hook | Prints team banner on session start (CLI only) |
+| `pre-tool-use-bash` hook | Hook | Guards dangerous Bash commands (CLI only) |
+| `pre-commit-quality` hook | Hook | Blocks commits with debug code or bad message format (CLI only) |
+| `git-push-reminder` hook | Hook | Reminds to review before git push (CLI only) |
+| `doc-file-warning` hook | Hook | Warns on ad-hoc doc files outside structured dirs (CLI only) |
+| `strategic-compact` hook | Hook | Suggests /compact at edit count thresholds (CLI only) |
+| `post-tool-use-write` hook | Hook | Placeholder for custom post-write actions (CLI only) |
+| `prettier-format` hook | Hook | Auto-formats written files via Prettier if installed (CLI only) |
+| `quality-gate` hook | Hook | Syntax/lint check after every file edit (CLI only) |
+| `pr-logger` hook | Hook | Logs PR URL and review command after gh pr create (CLI only) |
+| `pre-compact` hook | Hook | Logs timestamp before context compaction (CLI only) |
+| `Stop` hook | Hook | Prompt-based quality gate before session end (CLI only) |

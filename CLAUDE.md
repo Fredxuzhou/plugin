@@ -41,5 +41,13 @@ Format for a stdio server:
 | `code-reviewer` | Agent | Review completed implementation steps |
 | `session-start` hook | Hook | Prints team banner on session start |
 | `pre-tool-use-bash` hook | Hook | Guards dangerous Bash commands |
-| `post-tool-use-write` hook | Hook | Placeholder for auto-format on file write |
-| `Stop` hook | Hook | Prompt-based quality gate before completion |
+| `pre-commit-quality` hook | Hook | Blocks commits with debug code or bad message format |
+| `git-push-reminder` hook | Hook | Reminds to review before git push |
+| `doc-file-warning` hook | Hook | Warns on ad-hoc doc files outside structured dirs |
+| `strategic-compact` hook | Hook | Suggests /compact at edit count thresholds |
+| `post-tool-use-write` hook | Hook | Placeholder for custom post-write actions |
+| `prettier-format` hook | Hook | Auto-formats written files via Prettier (if installed) |
+| `quality-gate` hook | Hook | Syntax/lint check after every file edit |
+| `pr-logger` hook | Hook | Logs PR URL and review command after gh pr create |
+| `pre-compact` hook | Hook | Logs timestamp before context compaction |
+| `Stop` hook | Hook | Prompt-based quality gate before session end |
