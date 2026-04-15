@@ -211,23 +211,19 @@ def aggregate_results(results: dict) -> dict:
             "tokens": calculate_stats(tokens)
         }
 
-    # Calculate delta between the first two configs (if two exist)
+    # Only compute delta when there are exactly two configs to compare.
+    # With one config there is no baseline, so a delta would be meaningless.
     if len(configs) >= 2:
         primary = run_summary.get(configs[0], {})
         baseline = run_summary.get(configs[1], {})
-    else:
-        primary = run_summary.get(configs[0], {}) if configs else {}
-        baseline = {}
-
-    delta_pass_rate = primary.get("pass_rate", {}).get("mean", 0) - baseline.get("pass_rate", {}).get("mean", 0)
-    delta_time = primary.get("time_seconds", {}).get("mean", 0) - baseline.get("time_seconds", {}).get("mean", 0)
-    delta_tokens = primary.get("tokens", {}).get("mean", 0) - baseline.get("tokens", {}).get("mean", 0)
-
-    run_summary["delta"] = {
-        "pass_rate": f"{delta_pass_rate:+.2f}",
-        "time_seconds": f"{delta_time:+.1f}",
-        "tokens": f"{delta_tokens:+.0f}"
-    }
+        delta_pass_rate = primary.get("pass_rate", {}).get("mean", 0) - baseline.get("pass_rate", {}).get("mean", 0)
+        delta_time = primary.get("time_seconds", {}).get("mean", 0) - baseline.get("time_seconds", {}).get("mean", 0)
+        delta_tokens = primary.get("tokens", {}).get("mean", 0) - baseline.get("tokens", {}).get("mean", 0)
+        run_summary["delta"] = {
+            "pass_rate": f"{delta_pass_rate:+.2f}",
+            "time_seconds": f"{delta_time:+.1f}",
+            "tokens": f"{delta_tokens:+.0f}",
+        }
 
     return run_summary
 
@@ -276,7 +272,7 @@ def generate_benchmark(benchmark_dir: Path, skill_name: str = "", skill_path: st
             "analyzer_model": "<model-name>",
             "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "evals_run": eval_ids,
-            "runs_per_configuration": 3
+            "runs_per_configuration": max((len(results.get(c, [])) for c in results), default=0)
         },
         "runs": runs,
         "run_summary": run_summary,

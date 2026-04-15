@@ -7,7 +7,7 @@ $inputJson = $input -join ""
 $command = ""
 try {
     $data = $inputJson | ConvertFrom-Json
-    $command = [string]$data.command
+    $command = [string]$data.tool_input.command
 } catch {
     $command = ""
 }

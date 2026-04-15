@@ -180,7 +180,11 @@ def run_single_query(
                                     pending_tool_name = tool_name
                                     accumulated_json = ""
                                 else:
-                                    return False
+                                    # Non-Skill/Read tool (e.g. LS, Glob): reset
+                                    # tracking state and keep scanning — the skill
+                                    # may still be triggered in a later tool call.
+                                    pending_tool_name = None
+                                    accumulated_json = ""
 
                         elif se_type == "content_block_delta" and pending_tool_name:
                             delta = se.get("delta", {})
