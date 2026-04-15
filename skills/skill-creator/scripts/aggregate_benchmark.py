@@ -272,7 +272,14 @@ def generate_benchmark(benchmark_dir: Path, skill_name: str = "", skill_path: st
             "analyzer_model": "<model-name>",
             "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "evals_run": eval_ids,
-            "runs_per_configuration": max((len(results.get(c, [])) for c in results), default=0)
+            "runs_per_configuration": (
+                # Store as a plain int when all configs have equal run counts;
+                # store as a per-config dict when counts differ so readers know
+                # exactly how many runs back each side of a comparison.
+                list({len(results.get(c, [])) for c in results})[0]
+                if len({len(results.get(c, [])) for c in results}) == 1
+                else {c: len(results.get(c, [])) for c in results}
+            )
         },
         "runs": runs,
         "run_summary": run_summary,
@@ -289,42 +296,71 @@ def generate_markdown(benchmark: dict) -> str:
 
     # Determine config names (excluding "delta")
     configs = [k for k in run_summary if k != "delta"]
-    config_a = configs[0] if len(configs) >= 1 else "config_a"
-    config_b = configs[1] if len(configs) >= 2 else "config_b"
-    label_a = config_a.replace("_", " ").title()
-    label_b = config_b.replace("_", " ").title()
+
+    # Format runs_per_configuration for the header line
+    rpc = metadata["runs_per_configuration"]
+    if isinstance(rpc, dict):
+        rpc_str = ", ".join(f"{c.replace('_', ' ').title()}: {n}" for c, n in rpc.items())
+        evals_line = f"**Evals**: {', '.join(map(str, metadata['evals_run']))} ({rpc_str} runs)"
+    else:
+        evals_line = f"**Evals**: {', '.join(map(str, metadata['evals_run']))} ({rpc} runs each per configuration)"
 
     lines = [
         f"# Skill Benchmark: {metadata['skill_name']}",
         "",
         f"**Model**: {metadata['executor_model']}",
         f"**Date**: {metadata['timestamp']}",
-        f"**Evals**: {', '.join(map(str, metadata['evals_run']))} ({metadata['runs_per_configuration']} runs each per configuration)",
+        evals_line,
         "",
         "## Summary",
         "",
-        f"| Metric | {label_a} | {label_b} | Delta |",
-        "|--------|------------|---------------|-------|",
     ]
 
-    a_summary = run_summary.get(config_a, {})
-    b_summary = run_summary.get(config_b, {})
-    delta = run_summary.get("delta", {})
+    if len(configs) >= 2:
+        # Two-config comparison table
+        config_a = configs[0]
+        config_b = configs[1]
+        label_a = config_a.replace("_", " ").title()
+        label_b = config_b.replace("_", " ").title()
+        a_summary = run_summary.get(config_a, {})
+        b_summary = run_summary.get(config_b, {})
+        delta = run_summary.get("delta", {})
 
-    # Format pass rate
-    a_pr = a_summary.get("pass_rate", {})
-    b_pr = b_summary.get("pass_rate", {})
-    lines.append(f"| Pass Rate | {a_pr.get('mean', 0)*100:.0f}% ± {a_pr.get('stddev', 0)*100:.0f}% | {b_pr.get('mean', 0)*100:.0f}% ± {b_pr.get('stddev', 0)*100:.0f}% | {delta.get('pass_rate', '—')} |")
+        lines += [
+            f"| Metric | {label_a} | {label_b} | Delta |",
+            "|--------|------------|---------------|-------|",
+        ]
 
-    # Format time
-    a_time = a_summary.get("time_seconds", {})
-    b_time = b_summary.get("time_seconds", {})
-    lines.append(f"| Time | {a_time.get('mean', 0):.1f}s ± {a_time.get('stddev', 0):.1f}s | {b_time.get('mean', 0):.1f}s ± {b_time.get('stddev', 0):.1f}s | {delta.get('time_seconds', '—')}s |")
+        a_pr = a_summary.get("pass_rate", {})
+        b_pr = b_summary.get("pass_rate", {})
+        lines.append(f"| Pass Rate | {a_pr.get('mean', 0)*100:.0f}% ± {a_pr.get('stddev', 0)*100:.0f}% | {b_pr.get('mean', 0)*100:.0f}% ± {b_pr.get('stddev', 0)*100:.0f}% | {delta.get('pass_rate', '—')} |")
 
-    # Format tokens
-    a_tokens = a_summary.get("tokens", {})
-    b_tokens = b_summary.get("tokens", {})
-    lines.append(f"| Tokens | {a_tokens.get('mean', 0):.0f} ± {a_tokens.get('stddev', 0):.0f} | {b_tokens.get('mean', 0):.0f} ± {b_tokens.get('stddev', 0):.0f} | {delta.get('tokens', '—')} |")
+        a_time = a_summary.get("time_seconds", {})
+        b_time = b_summary.get("time_seconds", {})
+        lines.append(f"| Time | {a_time.get('mean', 0):.1f}s ± {a_time.get('stddev', 0):.1f}s | {b_time.get('mean', 0):.1f}s ± {b_time.get('stddev', 0):.1f}s | {delta.get('time_seconds', '—')}s |")
+
+        a_tokens = a_summary.get("tokens", {})
+        b_tokens = b_summary.get("tokens", {})
+        lines.append(f"| Tokens | {a_tokens.get('mean', 0):.0f} ± {a_tokens.get('stddev', 0):.0f} | {b_tokens.get('mean', 0):.0f} ± {b_tokens.get('stddev', 0):.0f} | {delta.get('tokens', '—')} |")
+    else:
+        # Single-config table — no comparison columns, no delta
+        config_a = configs[0] if configs else "config"
+        label_a = config_a.replace("_", " ").title()
+        a_summary = run_summary.get(config_a, {})
+
+        lines += [
+            f"| Metric | {label_a} |",
+            "|--------|------------|",
+        ]
+
+        a_pr = a_summary.get("pass_rate", {})
+        lines.append(f"| Pass Rate | {a_pr.get('mean', 0)*100:.0f}% ± {a_pr.get('stddev', 0)*100:.0f}% |")
+
+        a_time = a_summary.get("time_seconds", {})
+        lines.append(f"| Time | {a_time.get('mean', 0):.1f}s ± {a_time.get('stddev', 0):.1f}s |")
+
+        a_tokens = a_summary.get("tokens", {})
+        lines.append(f"| Tokens | {a_tokens.get('mean', 0):.0f} ± {a_tokens.get('stddev', 0):.0f} |")
 
     # Notes section
     if benchmark.get("notes"):
