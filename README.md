@@ -1,56 +1,155 @@
 # team-plugin
 
-A self-contained Claude Code + GitHub Copilot CLI plugin for teams. Install via a single GitHub URL to get a curated set of official skills, a code review agent, four hook scaffolds, and a team context template.
+A team context and quality-guard plugin for **VS Code GitHub Copilot** and **Claude Code CLI**. Copy one file to give Copilot your team's conventions; install the full plugin to get hooks, agents, and skills in Claude Code.
 
-## Install
+---
 
-**Claude Code:**
+## 1. VS Code GitHub Copilot Setup
+
+### What this gives you
+
+VS Code GitHub Copilot reads `.github/copilot-instructions.md` from your repository and uses it as persistent context in every chat and inline suggestion. This plugin ships a ready-to-use template that you copy into your project repo once — no extension to install, no API keys, no build step.
+
+With a filled-in file Copilot will:
+- Follow your branch naming and commit message conventions automatically
+- Reference your team's doc links when answering architecture questions
+- Respect your PR policy and code review standards in suggestions
+- Know about the agents and skills available to your team
+
+### Step 1 — Copy the template
+
+```bash
+# From your project repo root
+curl -o .github/copilot-instructions.md \
+  https://raw.githubusercontent.com/your-org/team-plugin/main/.github/copilot-instructions.md
+```
+
+Or copy the file manually from `.github/copilot-instructions.md` in this repo.
+
+### Step 2 — Fill in your team details
+
+Open `.github/copilot-instructions.md` and replace every `TODO` section:
+
+```markdown
+## Team
+- **Team name:** Payments Platform
+- **Primary repo:** https://github.com/acme/payments-api
+- **Internal docs:** https://notion.so/acme/payments
+
+## Coding Conventions
+- Branch naming: `feature/<JIRA-123>-description`
+- Commit format: Conventional Commits (feat:, fix:, chore:, docs:, etc.)
+- PR policy: 2 reviews required; no direct pushes to main
+- Use Zod for all runtime validation
+- All API responses must be typed with shared DTOs in packages/types
+
+## Key Links
+- CI/CD dashboard: https://buildkite.com/acme/payments
+- On-call runbook: https://notion.so/acme/payments/runbook
+- Architecture docs: https://notion.so/acme/payments/arch
+```
+
+### Step 3 — Commit and push
+
+```bash
+git add .github/copilot-instructions.md
+git commit -m "chore: add team Copilot instructions"
+git push
+```
+
+GitHub Copilot in VS Code picks up the file automatically — no settings change needed.
+
+### Step 4 — Verify it's working
+
+Open GitHub Copilot Chat in VS Code (`Ctrl+Shift+I` / `Cmd+Shift+I`) and ask:
+
+> "What's our branch naming convention?"
+
+Copilot should answer using your team's conventions from the file.
+
+### What Copilot Instructions can and cannot do
+
+| Capability | Supported |
+|------------|-----------|
+| Team conventions in every suggestion | Yes |
+| Coding standards and patterns | Yes |
+| Links to internal docs | Yes |
+| Custom hooks / automated guards | No — Claude Code CLI only |
+| Code review agent | No — Claude Code CLI only |
+| Skill creator | No — Claude Code CLI only |
+
+> Hooks, agents, and skills require Claude Code CLI (see section 2 below). The instructions file provides context only.
+
+### Keeping it up to date
+
+The template in this repo is the canonical version. When your team standards change:
+1. Edit `.github/copilot-instructions.md` in your project repo
+2. Commit — Copilot picks up changes on the next VS Code reload
+
+To pull in upstream improvements to the template itself, compare against the latest version in this repo and merge any structural improvements.
+
+---
+
+## 2. Claude Code CLI Setup
+
+### Install
+
 ```bash
 /plugin install https://github.com/your-org/team-plugin
 ```
 
-**GitHub Copilot CLI:**
-```bash
-copilot plugin marketplace add https://github.com/your-org/team-plugin
-copilot plugin install team-plugin@your-org
-```
+This installs all hooks, agents, and skills into your Claude Code configuration.
+
+### What you get
+
+On top of everything in the Copilot instructions, Claude Code gets:
+
+- **13 hooks** that run automatically — quality guards, format checks, safety blocks, and session tooling
+- **`code-reviewer` agent** — reviews completed implementation steps
+- **`skill-creator` skill** — creates and improves agent skills with eval-driven optimization
+
+### Setup after install
+
+1. **Update `.claude-plugin/plugin.json`** — replace `Your Team Name` and `your-org/team-plugin` with your actual team and repo details.
+2. **Fill in `CLAUDE.md`** — same team details as the Copilot instructions; this file is loaded at session start by the `session-start` hook.
+3. **Customize hooks** (optional) — edit `hooks/scripts/` to match your team's policies:
+   - `session-start` / `session-start.ps1` — update the banner text
+   - `pre-tool-use-bash` / `pre-tool-use-bash.ps1` — add or remove dangerous command patterns
+   - `post-tool-use-write` / `post-tool-use-write.ps1` — uncomment the auto-format example for your stack
+4. **Add internal MCP** (when ready) — drop your server config into `.mcp.json`. See `CLAUDE.md` for the format.
+
+### Windows requirements
+
+Hooks require one of:
+- **Git for Windows** (recommended) — includes bash. Download: https://git-scm.com
+- **PowerShell 7+** — `winget install Microsoft.PowerShell`
+
+If neither is found, hooks exit with a clear error message. Skills and agents work without bash or PowerShell.
+
+---
 
 ## What's Included
 
-| Component | Type | Source |
-|-----------|------|--------|
-| `skill-creator` | Skill | Copied from `skill-creator@claude-plugins-official` |
-| `code-reviewer` | Agent | Copied from `superpowers@claude-plugins-official` v5.0.7 |
-| `session-start` hook | Hook | Prints team banner on session start |
-| `pre-tool-use-bash` hook | Hook | Guards dangerous Bash commands |
-| `pre-commit-quality` hook | Hook | Blocks commits with debug code or bad message format |
-| `git-push-reminder` hook | Hook | Reminds to review before git push |
-| `doc-file-warning` hook | Hook | Warns on ad-hoc doc files outside structured dirs |
-| `strategic-compact` hook | Hook | Suggests /compact at edit count thresholds |
-| `post-tool-use-write` hook | Hook | Placeholder for custom post-write actions |
-| `prettier-format` hook | Hook | Auto-formats written files via Prettier (if installed) |
-| `quality-gate` hook | Hook | Syntax/lint check after every file edit |
-| `pr-logger` hook | Hook | Logs PR URL and review command after gh pr create |
-| `pre-compact` hook | Hook | Logs timestamp before context compaction |
-| `Stop` hook | Hook | Prompt-based quality gate before session end |
+| Component | Type | Available in |
+|-----------|------|-------------|
+| `.github/copilot-instructions.md` | Context template | VS Code Copilot + Claude Code |
+| `CLAUDE.md` | Context template | Claude Code |
+| `skill-creator` | Skill | Claude Code |
+| `code-reviewer` | Agent | Claude Code |
+| `session-start` hook | Hook | Claude Code |
+| `pre-tool-use-bash` hook | Hook | Claude Code |
+| `pre-commit-quality` hook | Hook | Claude Code |
+| `git-push-reminder` hook | Hook | Claude Code |
+| `doc-file-warning` hook | Hook | Claude Code |
+| `strategic-compact` hook | Hook | Claude Code |
+| `post-tool-use-write` hook | Hook | Claude Code |
+| `prettier-format` hook | Hook | Claude Code |
+| `quality-gate` hook | Hook | Claude Code |
+| `pr-logger` hook | Hook | Claude Code |
+| `pre-compact` hook | Hook | Claude Code |
+| `Stop` hook | Hook | Claude Code |
 
-## Setup After Install
-
-1. **Update `.claude-plugin/plugin.json`** — replace `Your Team Name` and `your-org/team-plugin` with your actual team and repo details.
-2. **Fill in `CLAUDE.md`** — replace the `TODO` sections with your team name, doc links, and coding conventions.
-3. **Customize hooks** (optional) — edit `hooks/scripts/` to match your team's policies:
-   - `session-start` (bash) / `session-start.ps1` (PowerShell) — update the banner text
-   - `pre-tool-use-bash` (bash) / `pre-tool-use-bash.ps1` (PowerShell) — add or remove dangerous patterns
-   - `post-tool-use-write` (bash) / `post-tool-use-write.ps1` (PowerShell) — uncomment the auto-format example for your stack
-4. **Add internal MCP** (when ready) — drop your server config into `.mcp.json`. See `CLAUDE.md` for the expected format.
-
-## Updating Official Content
-
-Both `skills/skill-creator/SKILL.md` and `agents/code-reviewer.md` carry a `<!-- SOURCE: -->` header comment. To update them to a newer upstream version:
-
-1. Find the latest files at the URL in the SOURCE comment
-2. Replace the file contents (keep the provenance header lines at the top)
-3. Commit with `chore: update <component> from upstream`
+---
 
 ## Hooks Reference
 
@@ -127,38 +226,27 @@ Runs before Claude Code compacts the conversation context. Appends a timestamped
 
 ---
 
-## License
+## Updating Official Content
 
-MIT
+Both `skills/skill-creator/SKILL.md` and `agents/code-reviewer.md` carry a `<!-- SOURCE: -->` header comment. To update them to a newer upstream version:
+
+1. Find the latest files at the URL in the SOURCE comment
+2. Replace the file contents (keep the provenance header lines at the top)
+3. Commit with `chore: update <component> from upstream`
 
 ---
 
 ## Platform Support
 
-| Platform | Install method | Hook support |
-|----------|---------------|--------------|
-| Claude Code CLI — Mac/Linux | `/plugin install https://github.com/your-org/team-plugin` | Full |
-| Claude Code CLI — Windows | `/plugin install https://github.com/your-org/team-plugin` | Full (requires Git Bash or PowerShell 7+) |
-| GitHub Copilot CLI | `copilot plugin marketplace add https://github.com/your-org/team-plugin` then `copilot plugin install team-plugin@your-org` | Full |
-| VS Code Copilot | Copy `.github/copilot-instructions.md` to your repo | Conventions only |
-| JetBrains Copilot | Copy `.github/copilot-instructions.md` to your repo | Conventions only |
-| Any IDE Copilot | Copy `.github/copilot-instructions.md` to your repo | Conventions only |
+| Platform | Setup | What you get |
+|----------|-------|-------------|
+| VS Code GitHub Copilot | Copy `.github/copilot-instructions.md` to your repo | Team conventions in every suggestion |
+| JetBrains GitHub Copilot | Copy `.github/copilot-instructions.md` to your repo | Team conventions in every suggestion |
+| Claude Code — Mac/Linux | `/plugin install https://github.com/your-org/team-plugin` | Full (hooks, agents, skills) |
+| Claude Code — Windows | `/plugin install https://github.com/your-org/team-plugin` | Full (requires Git Bash or PowerShell 7+) |
 
-## Windows Requirements
+---
 
-Hooks require one of:
+## License
 
-- **Git for Windows** (recommended) — includes bash. Download: https://git-scm.com
-- **PowerShell 7+** — cross-platform PowerShell. Install: `winget install Microsoft.PowerShell`
-
-If neither is installed, hooks will exit with an error message pointing to this requirement. Skills and agents still work without bash or PowerShell.
-
-## IDE Copilot Setup
-
-VS Code, JetBrains, and other IDE Copilot integrations do not support plugin installation. To give IDE Copilot your team's context:
-
-1. Copy `.github/copilot-instructions.md` from this repo into your project repo at the same path
-2. Fill in the `TODO` sections (team name, doc links, conventions)
-3. Commit — GitHub Copilot picks it up automatically
-
-Note: Hooks, the `code-reviewer` agent, and the `skill-creator` skill are only available in Claude Code CLI and GitHub Copilot CLI, not in IDE Copilot.
+MIT

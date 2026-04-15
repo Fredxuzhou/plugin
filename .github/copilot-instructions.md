@@ -1,11 +1,12 @@
 <!-- TEMPLATE: from team-plugin — https://github.com/your-org/team-plugin -->
 <!-- Copy this file to .github/copilot-instructions.md in your project repo, then fill in each TODO section -->
+<!-- GitHub Copilot in VS Code picks this file up automatically — no extension settings needed -->
 
 # Team Copilot Instructions
 
-This file gives GitHub Copilot (VS Code, JetBrains, and other IDEs) context about your team's conventions and resources.
+This file gives GitHub Copilot (VS Code, JetBrains, and other IDEs) persistent context about your team's conventions, standards, and resources. It is read automatically on every chat message and inline suggestion.
 
-> **Note:** Hooks and agents (code-reviewer, skill-creator) require Claude Code CLI or GitHub Copilot CLI. They are not available in IDE Copilot. This file provides conventions and context only.
+> **Note:** Hooks, the `code-reviewer` agent, and the `skill-creator` skill require Claude Code CLI and are not available in IDE Copilot. This file provides team context and coding conventions only.
 
 ## Team
 <!-- TODO: Fill in your team details -->
@@ -18,7 +19,7 @@ This file gives GitHub Copilot (VS Code, JetBrains, and other IDEs) context abou
 - Branch naming: `feature/<ticket>-description`, `fix/<ticket>-description`
 - Commit format: Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, etc.)
 - PR policy: at least 1 review required before merge; no direct pushes to `main`
-- [Add more conventions here]
+- [Add more conventions here — e.g. preferred libraries, patterns to avoid, testing requirements]
 
 ## Key Links
 <!-- TODO: Replace with real URLs -->
@@ -28,22 +29,22 @@ This file gives GitHub Copilot (VS Code, JetBrains, and other IDEs) context abou
 
 ## Internal MCP
 <!-- TODO: Update when your internal MCP is configured -->
-The team uses an internal MCP server configured in `.mcp.json` (Claude Code CLI / Copilot CLI only).
+The team uses an internal MCP server configured in `.mcp.json` (Claude Code CLI only).
 
 ## Installed Components
-| Component | Type | Purpose |
-|-----------|------|---------|
-| `skill-creator` | Skill | Create and improve agent skills (Claude Code CLI / Copilot CLI only) |
-| `code-reviewer` | Agent | Review completed implementation steps (Claude Code CLI / Copilot CLI only) |
-| `session-start` hook | Hook | Prints team banner on session start (CLI only) |
-| `pre-tool-use-bash` hook | Hook | Guards dangerous Bash commands (CLI only) |
-| `pre-commit-quality` hook | Hook | Blocks commits with debug code or bad message format (CLI only) |
-| `git-push-reminder` hook | Hook | Reminds to review before git push (CLI only) |
-| `doc-file-warning` hook | Hook | Warns on ad-hoc doc files outside structured dirs (CLI only) |
-| `strategic-compact` hook | Hook | Suggests /compact at edit count thresholds (CLI only) |
-| `post-tool-use-write` hook | Hook | Placeholder for custom post-write actions (CLI only) |
-| `prettier-format` hook | Hook | Auto-formats written files via Prettier if installed (CLI only) |
-| `quality-gate` hook | Hook | Syntax/lint check after every file edit (CLI only) |
-| `pr-logger` hook | Hook | Logs PR URL and review command after gh pr create (CLI only) |
-| `pre-compact` hook | Hook | Logs timestamp before context compaction (CLI only) |
-| `Stop` hook | Hook | Prompt-based quality gate before session end (CLI only) |
+| Component | Type | Available in |
+|-----------|------|-------------|
+| `skill-creator` | Skill | Claude Code CLI only |
+| `code-reviewer` | Agent | Claude Code CLI only |
+| `session-start` hook | Hook | Claude Code CLI only |
+| `pre-tool-use-bash` hook | Hook | Claude Code CLI only |
+| `pre-commit-quality` hook | Hook | Claude Code CLI only |
+| `git-push-reminder` hook | Hook | Claude Code CLI only |
+| `doc-file-warning` hook | Hook | Claude Code CLI only |
+| `strategic-compact` hook | Hook | Claude Code CLI only |
+| `post-tool-use-write` hook | Hook | Claude Code CLI only |
+| `prettier-format` hook | Hook | Claude Code CLI only |
+| `quality-gate` hook | Hook | Claude Code CLI only |
+| `pr-logger` hook | Hook | Claude Code CLI only |
+| `pre-compact` hook | Hook | Claude Code CLI only |
+| `Stop` hook | Hook | Claude Code CLI only |

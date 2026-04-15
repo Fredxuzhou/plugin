@@ -2,6 +2,8 @@
 
 This file is loaded by the SessionStart hook and gives Claude Code context about your team's conventions and resources. Replace every `TODO` section before sharing with teammates.
 
+> **VS Code Copilot users:** copy `.github/copilot-instructions.md` into your project repo instead — that file is picked up automatically by GitHub Copilot in VS Code with no additional setup.
+
 ## Team
 <!-- TODO: Fill in your team details -->
 - **Team name:** [Your Team Name]
