@@ -71,6 +71,13 @@ def run_loop(
         train_set, test_set = split_eval_set(eval_set, holdout)
         if verbose:
             print(f"Split: {len(train_set)} train, {len(test_set)} test (holdout={holdout})", file=sys.stderr)
+        if not train_set:
+            print(
+                "Warning: train set is empty after holdout split — the eval set is too small "
+                "to hold out examples from every class and still have training data. "
+                "Add more examples or set --holdout 0 to disable splitting.",
+                file=sys.stderr,
+            )
     else:
         train_set = eval_set
         test_set = []
@@ -177,7 +184,7 @@ def run_loop(
             if test_summary:
                 print_eval_stats("Test ", test_results["results"], 0)
 
-        if train_summary["failed"] == 0:
+        if train_summary["failed"] == 0 and train_summary["total"] > 0:
             exit_reason = f"all_passed (iteration {iteration})"
             if verbose:
                 print(f"\nAll train queries passed on iteration {iteration}!", file=sys.stderr)

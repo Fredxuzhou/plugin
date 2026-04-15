@@ -150,7 +150,15 @@ def load_run_results(benchmark_dir: Path) -> dict:
                 metrics = grading.get("execution_metrics", {})
                 result["tool_calls"] = metrics.get("total_tool_calls", 0)
                 if not result.get("tokens"):
-                    result["tokens"] = metrics.get("output_chars", 0)
+                    char_count = metrics.get("output_chars", 0)
+                    if char_count:
+                        print(
+                            f"Warning: timing.json missing for {run_dir}; "
+                            f"falling back to output_chars ({char_count}) as token estimate. "
+                            f"Character count != token count — benchmark token figures will be approximate.",
+                            file=sys.stderr,
+                        )
+                    result["tokens"] = char_count
                 result["errors"] = metrics.get("errors_encountered", 0)
 
                 # Extract expectations — viewer requires fields: text, passed, evidence

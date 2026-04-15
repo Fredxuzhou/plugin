@@ -8,15 +8,36 @@ for a set of queries. Outputs results as JSON.
 import argparse
 import json
 import os
-import select
+import queue
 import subprocess
 import sys
+import tempfile
+import threading
 import time
 import uuid
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 from scripts.utils import parse_skill_md
+
+
+def _read_stdout_chunks(stream, output_queue: queue.Queue) -> None:
+    """Read stdout in 8 KiB chunks and push them to *output_queue*.
+
+    A sentinel ``None`` is pushed when the stream is exhausted so callers
+    can detect EOF without blocking forever.  Runs in a daemon thread so it
+    never prevents interpreter shutdown.
+    """
+    try:
+        while True:
+            chunk = stream.read(8192)
+            if not chunk:
+                break
+            output_queue.put(chunk)
+    except OSError:
+        pass
+    finally:
+        output_queue.put(None)
 
 
 def find_project_root() -> Path:
@@ -50,11 +71,19 @@ def run_single_query(
     """
     unique_id = uuid.uuid4().hex[:8]
     clean_name = f"{skill_name}-skill-{unique_id}"
-    project_commands_dir = Path(project_root) / ".claude" / "commands"
-    command_file = project_commands_dir / f"{clean_name}.md"
 
-    try:
-        project_commands_dir.mkdir(parents=True, exist_ok=True)
+    # Each worker gets its own isolated temp directory containing a private
+    # .claude/commands/ tree.  This prevents concurrent workers from seeing
+    # each other's temporary skill files and recording spurious
+    # trigger/no-trigger results (Finding #1 fix).
+    # Using stream.read() via a daemon thread is cross-platform — select.select
+    # does not work on Windows subprocess pipes (Finding #2 fix).
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        command_dir = tmp_path / ".claude" / "commands"
+        command_dir.mkdir(parents=True)
+        command_file = command_dir / f"{clean_name}.md"
+
         # Use YAML block scalar to avoid breaking on quotes in description
         indented_desc = "\n  ".join(skill_description.split("\n"))
         command_content = (
@@ -86,9 +115,17 @@ def run_single_query(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
-            cwd=project_root,
+            cwd=tmp_dir,  # isolated cwd: Claude only discovers this worker's skill
             env=env,
         )
+
+        output_queue: queue.Queue = queue.Queue()
+        reader = threading.Thread(
+            target=_read_stdout_chunks,
+            args=(process.stdout, output_queue),
+            daemon=True,
+        )
+        reader.start()
 
         triggered = False
         start_time = time.time()
@@ -99,18 +136,23 @@ def run_single_query(
 
         try:
             while time.time() - start_time < timeout:
-                if process.poll() is not None:
-                    remaining = process.stdout.read()
-                    if remaining:
-                        buffer += remaining.decode("utf-8", errors="replace")
-                    break
-
-                ready, _, _ = select.select([process.stdout], [], [], 1.0)
-                if not ready:
+                try:
+                    chunk = output_queue.get(timeout=1.0)
+                except queue.Empty:
+                    if process.poll() is not None:
+                        # Drain any data the reader thread may still have queued
+                        while True:
+                            try:
+                                chunk = output_queue.get_nowait()
+                            except queue.Empty:
+                                break
+                            if chunk is None:
+                                break
+                            buffer += chunk.decode("utf-8", errors="replace")
+                        break
                     continue
 
-                chunk = os.read(process.stdout.fileno(), 8192)
-                if not chunk:
+                if chunk is None:
                     break
                 buffer += chunk.decode("utf-8", errors="replace")
 
@@ -174,11 +216,9 @@ def run_single_query(
             if process.poll() is None:
                 process.kill()
                 process.wait()
+            reader.join(timeout=2.0)
 
         return triggered
-    finally:
-        if command_file.exists():
-            command_file.unlink()
 
 
 def run_eval(
