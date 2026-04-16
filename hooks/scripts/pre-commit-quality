@@ -37,14 +37,27 @@ if [ -n "$STAGED" ]; then
 fi
 
 # --- Check commit message against Conventional Commits ---
+# Try -m flag first, then -F/--file flag
 COMMIT_MSG=$(echo "$COMMAND" | python3 -c "
 import sys, re
 cmd = sys.stdin.read()
-# Extract -m 'msg' or -m \"msg\"
 m = re.search(r'-m\s+[\"\'](.*?)[\"\']', cmd)
 if m:
     print(m.group(1))
 " 2>/dev/null)
+
+if [ -z "$COMMIT_MSG" ]; then
+  MSG_FILE=$(echo "$COMMAND" | python3 -c "
+import sys, re
+cmd = sys.stdin.read()
+m = re.search(r'(?:-F|--file)[=\s]+[\"\'\"\"']?([^\s\"\'\"\"']+)', cmd)
+if m:
+    print(m.group(1))
+" 2>/dev/null)
+  if [ -n "$MSG_FILE" ] && [ -f "$MSG_FILE" ]; then
+    COMMIT_MSG=$(head -1 "$MSG_FILE")
+  fi
+fi
 
 if [ -n "$COMMIT_MSG" ]; then
   if ! echo "$COMMIT_MSG" | grep -qE '^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .{1,72}$'; then

@@ -133,15 +133,18 @@ def load_run_results(benchmark_dir: Path) -> dict:
                     "total": grading.get("summary", {}).get("total", 0),
                 }
 
-                # Extract timing — check grading.json first, then sibling timing.json
+                # Extract timing — grading.json is authoritative for duration;
+                # timing.json is always read for tokens (graders may write duration
+                # to grading.json but leave token counts only in timing.json).
                 timing = grading.get("timing", {})
                 result["time_seconds"] = timing.get("total_duration_seconds", 0.0)
                 timing_file = run_dir / "timing.json"
-                if result["time_seconds"] == 0.0 and timing_file.exists():
+                if timing_file.exists():
                     try:
                         with open(timing_file) as tf:
                             timing_data = json.load(tf)
-                        result["time_seconds"] = timing_data.get("total_duration_seconds", 0.0)
+                        if result["time_seconds"] == 0.0:
+                            result["time_seconds"] = timing_data.get("total_duration_seconds", 0.0)
                         result["tokens"] = timing_data.get("total_tokens", 0)
                     except json.JSONDecodeError:
                         pass
@@ -317,31 +320,37 @@ def generate_markdown(benchmark: dict) -> str:
     ]
 
     if len(configs) >= 2:
-        # Two-config comparison table
-        config_a = configs[0]
-        config_b = configs[1]
-        label_a = config_a.replace("_", " ").title()
-        label_b = config_b.replace("_", " ").title()
-        a_summary = run_summary.get(config_a, {})
-        b_summary = run_summary.get(config_b, {})
-        delta = run_summary.get("delta", {})
+        # Multi-config comparison table — render all configs; delta only for exactly two
+        delta = run_summary.get("delta", {}) if len(configs) == 2 else {}
+        labels = [c.replace("_", " ").title() for c in configs]
+        header = "| Metric | " + " | ".join(labels) + (" | Delta |" if delta else " |")
+        sep = "|--------|" + "------------|" * len(configs) + ("-------|" if delta else "")
+        lines += [header, sep]
 
-        lines += [
-            f"| Metric | {label_a} | {label_b} | Delta |",
-            "|--------|------------|---------------|-------|",
-        ]
+        def _fmt_pr(cfg):
+            s = run_summary.get(cfg, {}).get("pass_rate", {})
+            return f"{s.get('mean', 0)*100:.0f}% ± {s.get('stddev', 0)*100:.0f}%"
 
-        a_pr = a_summary.get("pass_rate", {})
-        b_pr = b_summary.get("pass_rate", {})
-        lines.append(f"| Pass Rate | {a_pr.get('mean', 0)*100:.0f}% ± {a_pr.get('stddev', 0)*100:.0f}% | {b_pr.get('mean', 0)*100:.0f}% ± {b_pr.get('stddev', 0)*100:.0f}% | {delta.get('pass_rate', '—')} |")
+        def _fmt_time(cfg):
+            s = run_summary.get(cfg, {}).get("time_seconds", {})
+            return f"{s.get('mean', 0):.1f}s ± {s.get('stddev', 0):.1f}s"
 
-        a_time = a_summary.get("time_seconds", {})
-        b_time = b_summary.get("time_seconds", {})
-        lines.append(f"| Time | {a_time.get('mean', 0):.1f}s ± {a_time.get('stddev', 0):.1f}s | {b_time.get('mean', 0):.1f}s ± {b_time.get('stddev', 0):.1f}s | {delta.get('time_seconds', '—')}s |")
+        def _fmt_tokens(cfg):
+            s = run_summary.get(cfg, {}).get("tokens", {})
+            return f"{s.get('mean', 0):.0f} ± {s.get('stddev', 0):.0f}"
 
-        a_tokens = a_summary.get("tokens", {})
-        b_tokens = b_summary.get("tokens", {})
-        lines.append(f"| Tokens | {a_tokens.get('mean', 0):.0f} ± {a_tokens.get('stddev', 0):.0f} | {b_tokens.get('mean', 0):.0f} ± {b_tokens.get('stddev', 0):.0f} | {delta.get('tokens', '—')} |")
+        pr_row = "| Pass Rate | " + " | ".join(_fmt_pr(c) for c in configs)
+        time_row = "| Time | " + " | ".join(_fmt_time(c) for c in configs)
+        tok_row = "| Tokens | " + " | ".join(_fmt_tokens(c) for c in configs)
+        if delta:
+            pr_row += f" | {delta.get('pass_rate', '—')} |"
+            time_row += f" | {delta.get('time_seconds', '—')}s |"
+            tok_row += f" | {delta.get('tokens', '—')} |"
+        else:
+            pr_row += " |"
+            time_row += " |"
+            tok_row += " |"
+        lines += [pr_row, time_row, tok_row]
     else:
         # Single-config table — no comparison columns, no delta
         config_a = configs[0] if configs else "config"

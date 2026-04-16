@@ -2,7 +2,7 @@
 
 This file is loaded by the SessionStart hook and gives Claude Code context about your team's conventions and resources. Replace every `TODO` section before sharing with teammates.
 
-> **VS Code Copilot users:** install the plugin via Command Palette → **Chat: Install Plugin From Source** to get hooks, agents, and skills in Agent mode. Copy `.github/copilot-instructions.md` to your project repo for conventions in Ask/Edit mode and inline suggestions.
+> **VS Code Copilot users:** install the plugin via Command Palette → **Chat: Install Plugin From Source** to get hooks, agents, and skills in Agent mode. Copy `.github/copilot-instructions.md` to your project repo for conventions in Copilot Chat (Ask/Edit mode). Note: custom instructions apply to chat only, not inline completions.
 
 ## Team
 <!-- TODO: Fill in your team details -->

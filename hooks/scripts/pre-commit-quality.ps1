@@ -35,8 +35,18 @@ try {
 } catch {}
 
 # --- Check commit message against Conventional Commits ---
+# Try -m flag first, then -F/--file flag
+$msg = $null
 if ($command -match '-m\s+[''"](.+?)[''"]') {
     $msg = $Matches[1]
+} elseif ($command -match '(?:-F|--file)[=\s]+[''"]?([^\s''"]+)') {
+    $msgFile = $Matches[1]
+    if (Test-Path $msgFile) {
+        $msg = (Get-Content $msgFile -TotalCount 1 -ErrorAction SilentlyContinue)
+    }
+}
+
+if ($msg) {
     if ($msg -notmatch '^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .{1,72}$') {
         $issues += "  - Commit message does not follow Conventional Commits format"
         $issues += "    Expected: type(scope): description (max 72 chars)"

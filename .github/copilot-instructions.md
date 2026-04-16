@@ -4,9 +4,9 @@
 
 # Team Copilot Instructions
 
-This file gives GitHub Copilot (VS Code, JetBrains, and other IDEs) persistent context about your team's conventions, standards, and resources. It is read automatically on every chat message and inline suggestion.
+This file gives GitHub Copilot (VS Code, JetBrains, and other IDEs) persistent context about your team's conventions, standards, and resources. It is applied automatically to Copilot Chat requests in the workspace. Note: custom instructions apply to chat only — they do not affect inline code completions as you type.
 
-> **Note:** Hooks, agents, and skills run in **VS Code Copilot Agent mode** after the plugin is installed (Command Palette → Chat: Install Plugin From Source). In Ask/Edit mode and inline suggestions, only the conventions in this file are available.
+> **Note:** Hooks, agents, and skills run in **VS Code Copilot Agent mode** after the plugin is installed (Command Palette → Chat: Install Plugin From Source). In Ask/Edit mode, only the conventions in this file are available.
 
 ## Team
 <!-- TODO: Fill in your team details -->

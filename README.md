@@ -12,7 +12,9 @@ A team plugin for **VS Code GitHub Copilot** and **Claude Code CLI**. Install it
 - GitHub Copilot + GitHub Copilot Chat extensions installed and signed in
 - Use **Agent mode** in Copilot Chat (the mode selector in the chat input bar — select "Agent" not "Ask" or "Edit")
 
-Hooks, skills, and agents only run in Agent mode. Basic chat and inline suggestions do not execute plugin hooks.
+Hooks, skills, and agents only run in Agent mode. Basic chat does not execute plugin hooks.
+
+> **Preview feature:** VS Code agent plugins are currently in preview. If `Chat: Install Plugin From Source` is missing from the Command Palette, your organisation may have it disabled. Ask your admin to enable `chat.plugins.enabled` in VS Code settings, or check [VS Code agent plugin docs](https://code.visualstudio.com/docs/copilot/customization/agent-plugins) for the current status.
 
 ### Install
 
@@ -62,7 +64,7 @@ To verify installation: open Copilot Chat in Agent mode and run a git commit —
 2. **Customize hooks** (optional) — edit scripts in `hooks/scripts/`:
    - `pre-tool-use-bash` — add or remove dangerous command patterns
    - `post-tool-use-write` — uncomment the auto-format example for your stack
-3. **Add copilot instructions** — copy `.github/copilot-instructions.md` into your project repo for team context in inline suggestions (see section 3 below).
+3. **Add copilot instructions** — copy `.github/copilot-instructions.md` into your project repo for team context in Copilot Chat (see section 3 below).
 
 ### Windows requirements
 
@@ -95,7 +97,7 @@ Everything works the same as VS Code — same hooks, same agents, same skills.
 
 ## 3. VS Code Inline Suggestions (without Agent mode)
 
-Copilot inline suggestions and basic chat do not run plugin hooks. To give Copilot your team's conventions in those contexts, copy the instructions file into your project repo:
+Copilot Ask/Edit mode and basic chat do not run plugin hooks. To give Copilot Chat your team's conventions without the full plugin, copy the instructions file into your project repo:
 
 ```bash
 # From your project repo root
@@ -104,13 +106,15 @@ cp /path/to/team-plugin/.github/copilot-instructions.md .github/copilot-instruct
 
 Then fill in the `TODO` sections and commit. GitHub Copilot picks it up automatically with no settings change.
 
-This gives inline suggestions and chat context about your branch naming, commit format, PR policy, and key links — but does not run hooks.
+This gives Copilot Chat context about your branch naming, commit format, PR policy, and key links — but does not run hooks. Note: custom instructions apply to chat requests only, not to inline code completions as you type.
 
 ---
 
 ## Hooks Reference
 
 All hooks run through the cross-platform `run-hook.cmd` wrapper (bash on Mac/Linux, Git Bash or PowerShell 7+ on Windows). Each hook has an extensionless bash script and a `.ps1` PowerShell equivalent in `hooks/scripts/`.
+
+> **VS Code note:** VS Code currently ignores `matcher` values in hook configuration (preview limitation). All hooks fire on every matching lifecycle event regardless of the tool matcher specified. Matcher scoping works as documented in Claude Code CLI.
 
 ### Hook Overview
 
