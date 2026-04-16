@@ -1,122 +1,74 @@
 # team-plugin
 
-A team context and quality-guard plugin for **VS Code GitHub Copilot** and **Claude Code CLI**. Copy one file to give Copilot your team's conventions; install the full plugin to get hooks, agents, and skills in Claude Code.
+A team plugin for **VS Code GitHub Copilot** and **Claude Code CLI**. Install it to get hooks that run automatically, a code-review agent, a skill-creator skill, and your team's conventions baked into every session.
 
 ---
 
-## 1. VS Code GitHub Copilot Setup
+## 1. VS Code GitHub Copilot
 
-### What this gives you
+### Requirements
 
-VS Code GitHub Copilot reads `.github/copilot-instructions.md` from your repository and uses it as persistent context in every chat and inline suggestion. This plugin ships a ready-to-use template that you copy into your project repo once — no extension to install, no API keys, no build step.
+- VS Code 1.99 or later
+- GitHub Copilot + GitHub Copilot Chat extensions installed and signed in
+- Use **Agent mode** in Copilot Chat (the mode selector in the chat input bar — select "Agent" not "Ask" or "Edit")
 
-With a filled-in file Copilot will:
-- Follow your branch naming and commit message conventions automatically
-- Reference your team's doc links when answering architecture questions
-- Respect your PR policy and code review standards in suggestions
-- Know about the agents and skills available to your team
-
-### Step 1 — Copy the template
-
-```bash
-# From your project repo root
-curl -o .github/copilot-instructions.md \
-  https://raw.githubusercontent.com/your-org/team-plugin/main/.github/copilot-instructions.md
-```
-
-Or copy the file manually from `.github/copilot-instructions.md` in this repo.
-
-### Step 2 — Fill in your team details
-
-Open `.github/copilot-instructions.md` and replace every `TODO` section:
-
-```markdown
-## Team
-- **Team name:** Payments Platform
-- **Primary repo:** https://github.com/acme/payments-api
-- **Internal docs:** https://notion.so/acme/payments
-
-## Coding Conventions
-- Branch naming: `feature/<JIRA-123>-description`
-- Commit format: Conventional Commits (feat:, fix:, chore:, docs:, etc.)
-- PR policy: 2 reviews required; no direct pushes to main
-- Use Zod for all runtime validation
-- All API responses must be typed with shared DTOs in packages/types
-
-## Key Links
-- CI/CD dashboard: https://buildkite.com/acme/payments
-- On-call runbook: https://notion.so/acme/payments/runbook
-- Architecture docs: https://notion.so/acme/payments/arch
-```
-
-### Step 3 — Commit and push
-
-```bash
-git add .github/copilot-instructions.md
-git commit -m "chore: add team Copilot instructions"
-git push
-```
-
-GitHub Copilot in VS Code picks up the file automatically — no settings change needed.
-
-### Step 4 — Verify it's working
-
-Open GitHub Copilot Chat in VS Code (`Ctrl+Shift+I` / `Cmd+Shift+I`) and ask:
-
-> "What's our branch naming convention?"
-
-Copilot should answer using your team's conventions from the file.
-
-### What Copilot Instructions can and cannot do
-
-| Capability | Supported |
-|------------|-----------|
-| Team conventions in every suggestion | Yes |
-| Coding standards and patterns | Yes |
-| Links to internal docs | Yes |
-| Custom hooks / automated guards | No — Claude Code CLI only |
-| Code review agent | No — Claude Code CLI only |
-| Skill creator | No — Claude Code CLI only |
-
-> Hooks, agents, and skills require Claude Code CLI (see section 2 below). The instructions file provides context only.
-
-### Keeping it up to date
-
-The template in this repo is the canonical version. When your team standards change:
-1. Edit `.github/copilot-instructions.md` in your project repo
-2. Commit — Copilot picks up changes on the next VS Code reload
-
-To pull in upstream improvements to the template itself, compare against the latest version in this repo and merge any structural improvements.
-
----
-
-## 2. Claude Code CLI Setup
+Hooks, skills, and agents only run in Agent mode. Basic chat and inline suggestions do not execute plugin hooks.
 
 ### Install
 
-```bash
-/plugin install https://github.com/your-org/team-plugin
-```
+1. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
+2. Run **Chat: Install Plugin From Source**
+3. Enter your team's plugin URL:
+   ```
+   https://github.com/your-org/team-plugin
+   ```
+4. VS Code clones and activates the plugin — no restart needed
 
-This installs all hooks, agents, and skills into your Claude Code configuration.
+To verify installation: open Copilot Chat in Agent mode and run a git commit — the `pre-commit-quality` hook will fire automatically.
 
 ### What you get
 
-On top of everything in the Copilot instructions, Claude Code gets:
-
-- **13 hooks** that run automatically — quality guards, format checks, safety blocks, and session tooling
-- **`code-reviewer` agent** — reviews completed implementation steps
-- **`skill-creator` skill** — creates and improves agent skills with eval-driven optimization
+| Component | Type | What it does |
+|-----------|------|-------------|
+| `pre-tool-use-bash` hook | Hook — auto | Blocks dangerous shell commands (rm -rf /, force push, DROP TABLE) |
+| `pre-commit-quality` hook | Hook — auto | Blocks git commits with console.log/debugger or bad commit message format |
+| `git-push-reminder` hook | Hook — auto | Prints a review checklist before every git push |
+| `doc-file-warning` hook | Hook — auto | Warns when writing ad-hoc files like NOTES.md outside structured dirs |
+| `strategic-compact` hook | Hook — auto | Suggests /compact at 50-edit milestones to keep context fresh |
+| `prettier-format` hook | Hook — auto | Auto-formats files after every write (if Prettier is installed) |
+| `quality-gate` hook | Hook — auto | Syntax/lint check after every file edit |
+| `pr-logger` hook | Hook — auto | Logs PR URL and review command after gh pr create |
+| `pre-compact` hook | Hook — auto | Logs a timestamp before context compaction |
+| `session-start` hook | Hook — auto | Prints your team's banner at session start |
+| `Stop` hook | Hook — auto | Prompt-based quality gate before the agent stops |
+| `code-reviewer` | Agent | Reviews completed implementation steps on demand |
+| `skill-creator` | Skill | Creates and optimizes new skills with eval-driven iteration |
 
 ### Setup after install
 
-1. **Update `.claude-plugin/plugin.json`** — replace `Your Team Name` and `your-org/team-plugin` with your actual team and repo details.
-2. **Fill in `CLAUDE.md`** — same team details as the Copilot instructions; this file is loaded at session start by the `session-start` hook.
-3. **Customize hooks** (optional) — edit `hooks/scripts/` to match your team's policies:
-   - `session-start` / `session-start.ps1` — update the banner text
-   - `pre-tool-use-bash` / `pre-tool-use-bash.ps1` — add or remove dangerous command patterns
-   - `post-tool-use-write` / `post-tool-use-write.ps1` — uncomment the auto-format example for your stack
-4. **Add internal MCP** (when ready) — drop your server config into `.mcp.json`. See `CLAUDE.md` for the format.
+1. **Fill in `CLAUDE.md`** — replace the `TODO` sections with your team name, doc links, and coding conventions. This file is shown at session start.
+2. **Customize hooks** (optional) — edit scripts in `hooks/scripts/`:
+   - `pre-tool-use-bash` — add or remove dangerous command patterns
+   - `post-tool-use-write` — uncomment the auto-format example for your stack
+3. **Add copilot instructions** — copy `.github/copilot-instructions.md` into your project repo for team context in inline suggestions (see section 3 below).
+
+### Using the code-reviewer agent
+
+In Copilot Chat (Agent mode), after completing a significant implementation step:
+
+```
+@code-reviewer I've finished the user authentication system from step 3 of the plan
+```
+
+The agent reviews your implementation against the plan and coding standards.
+
+### Using the skill-creator skill
+
+In Copilot Chat (Agent mode):
+
+```
+/skill-creator create a new skill for our deployment workflow
+```
 
 ### Windows requirements
 
@@ -124,30 +76,41 @@ Hooks require one of:
 - **Git for Windows** (recommended) — includes bash. Download: https://git-scm.com
 - **PowerShell 7+** — `winget install Microsoft.PowerShell`
 
-If neither is found, hooks exit with a clear error message. Skills and agents work without bash or PowerShell.
+If neither is found, hooks exit with a clear error. Skills and agents work without bash or PowerShell.
 
 ---
 
-## What's Included
+## 2. Claude Code CLI
 
-| Component | Type | Available in |
-|-----------|------|-------------|
-| `.github/copilot-instructions.md` | Context template | VS Code Copilot + Claude Code |
-| `CLAUDE.md` | Context template | Claude Code |
-| `skill-creator` | Skill | Claude Code |
-| `code-reviewer` | Agent | Claude Code |
-| `session-start` hook | Hook | Claude Code |
-| `pre-tool-use-bash` hook | Hook | Claude Code |
-| `pre-commit-quality` hook | Hook | Claude Code |
-| `git-push-reminder` hook | Hook | Claude Code |
-| `doc-file-warning` hook | Hook | Claude Code |
-| `strategic-compact` hook | Hook | Claude Code |
-| `post-tool-use-write` hook | Hook | Claude Code |
-| `prettier-format` hook | Hook | Claude Code |
-| `quality-gate` hook | Hook | Claude Code |
-| `pr-logger` hook | Hook | Claude Code |
-| `pre-compact` hook | Hook | Claude Code |
-| `Stop` hook | Hook | Claude Code |
+### Install
+
+```bash
+/plugin install https://github.com/your-org/team-plugin
+```
+
+Everything works the same as VS Code — same hooks, same agents, same skills.
+
+### Setup after install
+
+1. Update `.claude-plugin/plugin.json` — replace `Your Team Name` and `your-org/team-plugin`.
+2. Fill in `CLAUDE.md` — same team details.
+3. Customize hooks in `hooks/scripts/` as needed.
+4. Add internal MCP in `.mcp.json` when ready (see `CLAUDE.md` for format).
+
+---
+
+## 3. VS Code Inline Suggestions (without Agent mode)
+
+Copilot inline suggestions and basic chat do not run plugin hooks. To give Copilot your team's conventions in those contexts, copy the instructions file into your project repo:
+
+```bash
+# From your project repo root
+cp /path/to/team-plugin/.github/copilot-instructions.md .github/copilot-instructions.md
+```
+
+Then fill in the `TODO` sections and commit. GitHub Copilot picks it up automatically with no settings change.
+
+This gives inline suggestions and chat context about your branch naming, commit format, PR policy, and key links — but does not run hooks.
 
 ---
 
@@ -189,7 +152,7 @@ Detects `git push` commands and prints a non-blocking checklist to stderr remind
 **Dependencies:** none
 
 #### `doc-file-warning`
-Warns when Claude writes a file matching ad-hoc patterns (`NOTES.md`, `TODO.txt`, `SCRATCH.md`, `TEMP.md`, etc.) outside of structured directories (`docs/`, `.claude/`, `.github/`, `skills/`, `memory/`). Never blocks.
+Warns when the agent writes a file matching ad-hoc patterns (`NOTES.md`, `TODO.txt`, `SCRATCH.md`, `TEMP.md`, etc.) outside of structured directories (`docs/`, `.claude/`, `.github/`, `skills/`, `memory/`). Never blocks.
 
 **Dependencies:** `python3`
 
@@ -210,7 +173,7 @@ Never blocks. Prints warnings to stderr.
 **Dependencies:** `python3`; optional: `eslint`, `gofmt`
 
 #### `prettier-format`
-After each Write, auto-formats the file in place using Prettier if available. Tries the local `node_modules/.bin/prettier` first, then the global `prettier`. Silently skips if Prettier is not installed. Supports: `js jsx ts tsx css scss html json md yaml yml`.
+After each Write, auto-formats the file in place using Prettier if available. Tries `node_modules/.bin/prettier` first, then the global `prettier`. Silently skips if Prettier is not installed. Supports: `js jsx ts tsx css scss html json md yaml yml`.
 
 **Dependencies:** optional: `prettier`
 
@@ -220,7 +183,7 @@ After each Bash tool call, checks if the command was `gh pr create`. If so, extr
 **Dependencies:** `gh` (GitHub CLI), `python3`
 
 #### `pre-compact`
-Runs before Claude Code compacts the conversation context. Appends a timestamped line to `~/.claude/compaction-log.txt` so you can track compaction frequency.
+Runs before the agent compacts the conversation context. Appends a timestamped line to `~/.claude/compaction-log.txt` so you can track compaction frequency.
 
 **Dependencies:** none
 
@@ -238,12 +201,12 @@ Both `skills/skill-creator/SKILL.md` and `agents/code-reviewer.md` carry a `<!--
 
 ## Platform Support
 
-| Platform | Setup | What you get |
-|----------|-------|-------------|
-| VS Code GitHub Copilot | Copy `.github/copilot-instructions.md` to your repo | Team conventions in every suggestion |
-| JetBrains GitHub Copilot | Copy `.github/copilot-instructions.md` to your repo | Team conventions in every suggestion |
-| Claude Code — Mac/Linux | `/plugin install https://github.com/your-org/team-plugin` | Full (hooks, agents, skills) |
-| Claude Code — Windows | `/plugin install https://github.com/your-org/team-plugin` | Full (requires Git Bash or PowerShell 7+) |
+| Platform | Install | Hooks | Agents | Skills |
+|----------|---------|-------|--------|--------|
+| VS Code Copilot (Agent mode) | Command Palette → Chat: Install Plugin From Source | ✅ | ✅ | ✅ |
+| Claude Code CLI — Mac/Linux | `/plugin install <url>` | ✅ | ✅ | ✅ |
+| Claude Code CLI — Windows | `/plugin install <url>` (needs Git Bash or pwsh) | ✅ | ✅ | ✅ |
+| VS Code Copilot (Ask/Edit mode) | Copy `.github/copilot-instructions.md` | ❌ | ❌ | ❌ |
 
 ---
 

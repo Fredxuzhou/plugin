@@ -6,7 +6,7 @@
 
 This file gives GitHub Copilot (VS Code, JetBrains, and other IDEs) persistent context about your team's conventions, standards, and resources. It is read automatically on every chat message and inline suggestion.
 
-> **Note:** Hooks, the `code-reviewer` agent, and the `skill-creator` skill require Claude Code CLI and are not available in IDE Copilot. This file provides team context and coding conventions only.
+> **Note:** Hooks, agents, and skills run in **VS Code Copilot Agent mode** after the plugin is installed (Command Palette → Chat: Install Plugin From Source). In Ask/Edit mode and inline suggestions, only the conventions in this file are available.
 
 ## Team
 <!-- TODO: Fill in your team details -->
@@ -34,17 +34,17 @@ The team uses an internal MCP server configured in `.mcp.json` (Claude Code CLI 
 ## Installed Components
 | Component | Type | Available in |
 |-----------|------|-------------|
-| `skill-creator` | Skill | Claude Code CLI only |
-| `code-reviewer` | Agent | Claude Code CLI only |
-| `session-start` hook | Hook | Claude Code CLI only |
-| `pre-tool-use-bash` hook | Hook | Claude Code CLI only |
-| `pre-commit-quality` hook | Hook | Claude Code CLI only |
-| `git-push-reminder` hook | Hook | Claude Code CLI only |
-| `doc-file-warning` hook | Hook | Claude Code CLI only |
-| `strategic-compact` hook | Hook | Claude Code CLI only |
-| `post-tool-use-write` hook | Hook | Claude Code CLI only |
-| `prettier-format` hook | Hook | Claude Code CLI only |
-| `quality-gate` hook | Hook | Claude Code CLI only |
-| `pr-logger` hook | Hook | Claude Code CLI only |
-| `pre-compact` hook | Hook | Claude Code CLI only |
-| `Stop` hook | Hook | Claude Code CLI only |
+| `skill-creator` | Skill | VS Code Agent mode + Claude Code CLI |
+| `code-reviewer` | Agent | VS Code Agent mode + Claude Code CLI |
+| `session-start` hook | Hook | VS Code Agent mode + Claude Code CLI |
+| `pre-tool-use-bash` hook | Hook | VS Code Agent mode + Claude Code CLI |
+| `pre-commit-quality` hook | Hook | VS Code Agent mode + Claude Code CLI |
+| `git-push-reminder` hook | Hook | VS Code Agent mode + Claude Code CLI |
+| `doc-file-warning` hook | Hook | VS Code Agent mode + Claude Code CLI |
+| `strategic-compact` hook | Hook | VS Code Agent mode + Claude Code CLI |
+| `post-tool-use-write` hook | Hook | VS Code Agent mode + Claude Code CLI |
+| `prettier-format` hook | Hook | VS Code Agent mode + Claude Code CLI |
+| `quality-gate` hook | Hook | VS Code Agent mode + Claude Code CLI |
+| `pr-logger` hook | Hook | VS Code Agent mode + Claude Code CLI |
+| `pre-compact` hook | Hook | VS Code Agent mode + Claude Code CLI |
+| `Stop` hook | Hook | VS Code Agent mode + Claude Code CLI |
