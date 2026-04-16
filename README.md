@@ -1,6 +1,6 @@
 # team-plugin
 
-A team plugin for **VS Code GitHub Copilot** and **Claude Code CLI**. Install it to get hooks that run automatically, a code-review agent, a skill-creator skill, and your team's conventions baked into every session.
+A team plugin for **VS Code GitHub Copilot** and **Claude Code CLI**. Install it to get hooks that run automatically, agents, skills, and your team's conventions baked into every session.
 
 ---
 
@@ -28,21 +28,33 @@ To verify installation: open Copilot Chat in Agent mode and run a git commit —
 
 ### What you get
 
-| Component | Type | What it does |
-|-----------|------|-------------|
-| `pre-tool-use-bash` hook | Hook — auto | Blocks dangerous shell commands (rm -rf /, force push, DROP TABLE) |
-| `pre-commit-quality` hook | Hook — auto | Blocks git commits with console.log/debugger or bad commit message format |
-| `git-push-reminder` hook | Hook — auto | Prints a review checklist before every git push |
-| `doc-file-warning` hook | Hook — auto | Warns when writing ad-hoc files like NOTES.md outside structured dirs |
-| `strategic-compact` hook | Hook — auto | Suggests /compact at 50-edit milestones to keep context fresh |
-| `prettier-format` hook | Hook — auto | Auto-formats files after every write (if Prettier is installed) |
-| `quality-gate` hook | Hook — auto | Syntax/lint check after every file edit |
-| `pr-logger` hook | Hook — auto | Logs PR URL and review command after gh pr create |
-| `pre-compact` hook | Hook — auto | Logs a timestamp before context compaction |
-| `session-start` hook | Hook — auto | Prints your team's banner at session start |
-| `Stop` hook | Hook — auto | Prompt-based quality gate before the agent stops |
-| `code-reviewer` | Agent | Reviews completed implementation steps on demand |
-| `skill-creator` | Skill | Creates and optimizes new skills with eval-driven iteration |
+**Hooks** (run automatically in the background):
+
+| Hook | What it does |
+|------|-------------|
+| `pre-tool-use-bash` | Blocks dangerous shell commands (rm -rf /, force push, DROP TABLE) |
+| `pre-commit-quality` | Blocks git commits with console.log/debugger or bad commit message format |
+| `git-push-reminder` | Prints a review checklist before every git push |
+| `doc-file-warning` | Warns when writing ad-hoc files like NOTES.md outside structured dirs |
+| `strategic-compact` | Suggests /compact at 50-edit milestones to keep context fresh |
+| `prettier-format` | Auto-formats files after every write (if Prettier is installed) |
+| `quality-gate` | Syntax/lint check after every file edit |
+| `pr-logger` | Logs PR URL and review command after gh pr create |
+| `pre-compact` | Logs a timestamp before context compaction |
+| `session-start` | Prints your team's banner at session start |
+| `Stop` | Prompt-based quality gate before the agent stops |
+
+**Agents** (invoke on demand in chat):
+
+| Agent | What it does |
+|-------|-------------|
+| `code-reviewer` | Reviews completed implementation steps against plan and coding standards |
+
+**Skills** (invoke via slash command in chat):
+
+| Skill | What it does |
+|-------|-------------|
+| `skill-creator` | Creates and optimizes new skills with eval-driven iteration |
 
 ### Setup after install
 
@@ -51,24 +63,6 @@ To verify installation: open Copilot Chat in Agent mode and run a git commit —
    - `pre-tool-use-bash` — add or remove dangerous command patterns
    - `post-tool-use-write` — uncomment the auto-format example for your stack
 3. **Add copilot instructions** — copy `.github/copilot-instructions.md` into your project repo for team context in inline suggestions (see section 3 below).
-
-### Using the code-reviewer agent
-
-In Copilot Chat (Agent mode), after completing a significant implementation step:
-
-```
-@code-reviewer I've finished the user authentication system from step 3 of the plan
-```
-
-The agent reviews your implementation against the plan and coding standards.
-
-### Using the skill-creator skill
-
-In Copilot Chat (Agent mode):
-
-```
-/skill-creator create a new skill for our deployment workflow
-```
 
 ### Windows requirements
 
